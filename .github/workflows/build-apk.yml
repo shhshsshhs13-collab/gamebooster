@@ -1,0 +1,42 @@
+
+name: Build Game Booster APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/build-apk.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Extract source ZIP
+        run: |
+          mkdir -p source
+          unzip -o GameBoostLite-source.zip -d source
+          find source -name settings.gradle.kts -print
+
+      - name: Build APK
+        run: |
+          PROJECT_DIR="$(dirname "$(find source -name settings.gradle.kts -print -quit)")"
+          test -n "$PROJECT_DIR"
+          cd "$PROJECT_DIR"
+          chmod +x gradlew
+          ./gradlew --no-daemon --max-workers=1 assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: GameBoostLite-debug-apk
+          path: source/**/app/build/outputs/apk/debug/*.apk
